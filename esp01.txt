@@ -1,0 +1,121 @@
+#include <ESP8266WiFi.h>
+#include <FirebaseArduino.h>
+#include <math.h>
+
+// Set these to run example.
+#define FIREBASE_HOST "nodemcudemo-d0840.firebaseio.com"
+#define FIREBASE_AUTH "lYJZhaposL4G3o0ODOEcodkw6LgSDbersMRltQKB"
+#define WIFI_SSID "Ishtha511"
+#define WIFI_PASSWORD "hello123"
+float vol=0;
+float curr=0;
+float totcurr=0;
+float bill;
+float y;
+void setup() {
+  pinMode(2,OUTPUT);
+  Serial.begin(115200);
+  digitalWrite(2,HIGH);
+
+  // connect to wifi.
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("connecting");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println();
+  Serial.print("connected: ");
+  Serial.println(WiFi.localIP());
+  
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+}
+
+int n = 1;
+
+void loop() {
+   if (Firebase.failed()) 
+   {
+       Serial.print("setting /number failed:");
+       Serial.println(Firebase.error());  
+       return;
+  }
+
+   if (Serial.available()){
+    y=Serial.read();
+  }
+  vol=(vol+(.0049*y));
+ /*  
+for(int i=0;i<1000;i++)
+{
+  vol=(vol+(.0049*analogRead(A0)));
+  delay(1);
+}
+*/
+  vol=vol/1000;
+curr=abs((vol-2.5)/0.185);
+totcurr+=curr;
+bill=totcurr*5;
+Serial.print("\nVoltage=");
+Serial.print(vol,2);
+Serial.print("\t current=");
+Serial.print(curr,2);
+delay(1000);
+
+  // set value
+  Firebase.setFloat("voltage", vol);
+  // handle error
+  if (Firebase.failed()) {
+      Serial.print("setting /number failed:");
+      Serial.println(Firebase.error());  
+      return;
+  }
+  delay(1000);
+
+    Firebase.setFloat("current", curr);
+  // handle error
+  if (Firebase.failed()) {
+      Serial.print("setting /number failed:");
+      Serial.println(Firebase.error());  
+      return;
+  }
+  delay(1000);
+
+      Firebase.setFloat("tcurrent", totcurr);
+  // handle error
+  if (Firebase.failed()) {
+      Serial.print("setting /number failed:");
+      Serial.println(Firebase.error());  
+      return;
+  }
+  delay(1000);
+
+        Firebase.setFloat("bill", bill);
+  // handle error
+  if (Firebase.failed()) {
+      Serial.print("setting /number failed:");
+      Serial.println(Firebase.error());  
+      return;
+  }
+  delay(1000);
+
+
+
+  n=Firebase.getInt("led");
+  // handle error
+  if (n==1) {
+      digitalWrite(2,HIGH);
+      Firebase.setFloat("led",1);
+      delay(10);     
+      return;
+  }
+  
+
+  else
+  {
+    digitalWrite(2,LOW);
+    Firebase.setFloat("led",0);
+    delay(10);
+      return;
+  }
+}
